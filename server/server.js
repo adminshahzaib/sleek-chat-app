@@ -19,7 +19,11 @@ const app = express();
 const server = http.createServer(app);
 
 // CORS setup
-const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+let clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+if (clientUrl.endsWith('/')) {
+  clientUrl = clientUrl.slice(0, -1);
+}
+
 app.use(
   cors({
     origin: clientUrl,
