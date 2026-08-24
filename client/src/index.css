@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-100 font-sans;
+  }
+}
+
+/* Custom Sleek Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155; /* slate-700 */
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569; /* slate-600 */
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(51, 65, 85, 0.4);
+}
+
+.glass-input {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.glass-input:focus {
+  border-color: rgba(99, 102, 241, 0.6); /* Indigo-500 */
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* Chat bubble styling details */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Custom Emoji Picker Dark Style Overrides */
+.epr-main {
+  --epr-bg-color: #0f172a !important; /* slate-900 */
+  --epr-category-icon-active-color: #6366f1 !important; /* indigo-500 */
+  --epr-search-border-color: #334155 !important;
+  --epr-hover-bg-color: #1e293b !important;
+  --epr-focus-bg-color: #1e293b !important;
+  --epr-text-color: #f1f5f9 !important;
+  --epr-search-input-bg-color: #1e293b !important;
+  border: 1px solid #334155 !important;
+  border-radius: 0.75rem !important;
+}
+
+/* Glassmorphism Styles & Global Transitions */
+.glass-panel {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-primary);
+}
+
+body, div, button, input, select, textarea, span, p, h1, h2, h3, img, a {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Chat Wallpaper Gradient Mesh */
+:root {
+  --chat-wallpaper-opacity: 0.04;
+  --bg-glass: rgba(15, 23, 42, 0.65);
+  --border-primary: rgba(51, 65, 85, 0.4);
+}
+
+html.light {
+  --chat-wallpaper-opacity: 0.08;
+  --bg-glass: rgba(255, 255, 255, 0.65);
+  --border-primary: rgba(203, 213, 225, 0.5);
+}
+
+.chat-background {
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-background::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--chat-wallpaper-opacity);
+  background-image: 
+    radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.25) 0px, transparent 50%),
+    radial-gradient(at 90% 10%, rgba(139, 92, 246, 0.25) 0px, transparent 50%),
+    radial-gradient(at 50% 80%, rgba(236, 72, 153, 0.15) 0px, transparent 50%);
+  background-size: 100% 100%;
+  z-index: 0;
+}
+
+.chat-background > * {
+  position: relative;
+}
+
+/* Typing Indicator Dot Wave Animation */
+.typing-dot {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  margin-right: 2px;
+  background: currentColor;
+  animation: wave 1.3s linear infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -1.1s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: -0.9s;
+}
+
+@keyframes wave {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Light Mode Overrides stylesheet mapping */
+html.light body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+html.light .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+
+html.light .bg-slate-900 {
+  background-color: #ffffff !important;
+}
+
+html.light .bg-slate-800 {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .bg-slate-955 {
+  background-color: #f8fafc !important;
+}
+
+html.light .bg-slate-850 {
+  background-color: #e2e8f0 !important;
+}
+
+html.light .bg-slate-950\/40 {
+  background-color: rgba(248, 250, 252, 0.4) !important;
+}
+
+html.light .bg-slate-900\/40 {
+  background-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+html.light .bg-slate-955 border,
+html.light .bg-slate-955.border {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .bg-slate-950\/20 {
+  background-color: rgba(248, 250, 252, 0.2) !important;
+}
+
+html.light .bg-slate-950\/80 {
+  background-color: rgba(248, 250, 252, 0.8) !important;
+}
+
+html.light .border-slate-800,
+html.light .border-slate-850,
+html.light .border-slate-800\/60,
+html.light .border-slate-800\/40 {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .border-slate-700 {
+  border-color: #cbd5e1 !important;
+}
+
+html.light .text-slate-100,
+html.light .text-slate-200 {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+html.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.light .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+html.light .hover\:bg-slate-800:hover,
+html.light .hover\:bg-slate-800\/30:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Emoji picker light mode sync */
+html.light .epr-main {
+  --epr-bg-color: #ffffff !important;
+  --epr-search-border-color: #e2e8f0 !important;
+  --epr-hover-bg-color: #f1f5f9 !important;
+  --epr-focus-bg-color: #f1f5f9 !important;
+  --epr-text-color: #0f172a !important;
+  --epr-search-input-bg-color: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
