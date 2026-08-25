@@ -46,8 +46,11 @@ export default function registerSocketHandlers(io) {
     });
 
     // Receive message from client, write to DB, and broadcast
-    socket.on('send_message', async ({ roomId, content, replyToId }) => {
-      if (!roomId || !content || !content.trim()) return;
+    socket.on('send_message', async ({ roomId, content, replyToId, attachment }) => {
+      const hasContent = content && content.trim();
+      const hasAttachment = attachment && attachment.fileUrl;
+
+      if (!roomId || (!hasContent && !hasAttachment)) return;
 
       try {
         // Double-check room membership for private rooms
@@ -64,8 +67,12 @@ export default function registerSocketHandlers(io) {
         const newMessage = await Message.create({
           roomId,
           senderId: user._id,
-          content: content.trim(),
+          content: hasContent ? content.trim() : '',
           replyTo: replyToId || null,
+          messageType: attachment ? attachment.messageType : 'text',
+          fileUrl: attachment ? attachment.fileUrl : null,
+          fileName: attachment ? attachment.fileName : null,
+          fileSize: attachment ? attachment.fileSize : null,
         });
 
         // Populate sender info (displayName, email, avatarUrl) and replyTo details

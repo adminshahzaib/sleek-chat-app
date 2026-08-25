@@ -132,13 +132,14 @@ export default function ChatWindow({ room, onRoomUpdated, onBack }) {
     };
   }, [socket, room?._id]);
 
-  const handleSendMessage = (content, replyToId = null) => {
+  const handleSendMessage = (content, replyToId = null, attachment = null) => {
     if (!socket || !room?._id || !isMember) return;
 
     socket.emit('send_message', {
       roomId: room._id,
       content,
       replyToId,
+      attachment,
     });
     setReplyingTo(null);
   };

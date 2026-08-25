@@ -1,8 +1,16 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { ChevronDown, Reply, Pencil, Trash2, Check, X, CornerUpLeft } from 'lucide-react';
+import { ChevronDown, Reply, Pencil, Trash2, Check, X, CornerUpLeft, FileText, Download } from 'lucide-react';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 export default function MessageList({ messages, onReply, onEdit, onDelete, onReact }) {
   const { mongoUser, contactsMap } = useAuth();
@@ -88,6 +96,60 @@ export default function MessageList({ messages, onReply, onEdit, onDelete, onRea
       }
       return part;
     });
+  };
+
+  const renderMessageContent = (msg) => {
+    switch (msg.messageType) {
+      case 'image':
+        return (
+          <div className="flex flex-col gap-1">
+            <img 
+              src={msg.fileUrl} 
+              alt={msg.fileName || 'Attachment'} 
+              className="max-w-[240px] md:max-w-xs max-h-64 rounded-xl object-cover cursor-pointer hover:opacity-90 transition-opacity border border-slate-800/40"
+              onClick={() => window.open(msg.fileUrl, '_blank')}
+            />
+            {msg.content && <p className="mt-1">{renderMessageText(msg.content)}</p>}
+          </div>
+        );
+      case 'audio':
+        return (
+          <div className="flex flex-col gap-1 min-w-[200px] py-1 px-0.5">
+            <audio 
+              src={msg.fileUrl} 
+              controls 
+              className="max-w-full rounded-lg h-8 shadow-inner select-none focus:outline-none" 
+            />
+          </div>
+        );
+      case 'file':
+        return (
+          <a 
+            href={msg.fileUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-950/45 hover:bg-slate-950/70 border border-slate-800/50 hover:border-slate-800 transition-all cursor-pointer select-none text-left no-underline group/file min-w-[220px] max-w-[280px]"
+          >
+            <div className="p-2 bg-slate-900 rounded-lg border border-slate-850 text-indigo-400 group-hover/file:text-indigo-300 shrink-0">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-bold text-slate-200 truncate group-hover/file:text-slate-100">
+                {msg.fileName}
+              </p>
+              <p className="text-[9px] text-slate-500 font-semibold mt-0.5 uppercase tracking-wide">
+                {formatFileSize(msg.fileSize)}
+              </p>
+            </div>
+            <div className="p-1.5 rounded-lg text-slate-500 hover:text-slate-250 group-hover/file:translate-y-0.5 transition-all shrink-0">
+              <Download className="w-4 h-4" />
+            </div>
+          </a>
+        );
+      case 'text':
+      default:
+        return <p>{renderMessageText(msg.content)}</p>;
+    }
   };
 
   const getDisplayName = (msg) => {
@@ -267,11 +329,13 @@ export default function MessageList({ messages, onReply, onEdit, onDelete, onRea
                           </div>
 
                           {/* Message bubble */}
-                          <div className={`px-3.5 py-2 rounded-2xl text-xs leading-relaxed shadow-sm break-words ${isSentByMe
+                          <div className={`rounded-2xl text-xs leading-relaxed shadow-sm break-words ${
+                            msg.messageType === 'image' ? 'p-1' : 'px-3.5 py-2'
+                          } ${isSentByMe
                               ? 'bg-indigo-600 text-white rounded-br-none'
                               : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-bl-none'
                             }`}>
-                            <p>{renderMessageText(msg.content)}</p>
+                            {renderMessageContent(msg)}
                           </div>
 
                           {/* Reaction pills */}
