@@ -20,16 +20,27 @@ const server = http.createServer(app);
 
 // CORS setup
 let clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-if (clientUrl.endsWith('/')) {
-  clientUrl = clientUrl.slice(0, -1);
-}
+const allowedOrigins = [
+  clientUrl,
+  clientUrl.endsWith('/') ? clientUrl.slice(0, -1) : clientUrl + '/'
+];
 
-app.use(
-  cors({
-    origin: clientUrl,
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    const normalizedClientUrl = clientUrl.replace(/\/$/, '');
+    if (normalizedOrigin === normalizedClientUrl || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS Blocked]: Request from origin ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 // Body parsers
 app.use(express.json());
@@ -41,13 +52,13 @@ app.use('/api/rooms', roomRoutes);
 
 // Root path test route
 app.get('/', (req, res) => {
-  res.send('Chat App API is running...');
+  res.send('Chat App API is running... (v2)');
 });
 
 // Setup Socket.io
 const io = new Server(server, {
   cors: {
-    origin: clientUrl,
+    origin: corsOptions.origin,
     methods: ['GET', 'POST'],
     credentials: true,
   },
