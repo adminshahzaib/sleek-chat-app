@@ -146,7 +146,7 @@ export default function MessageList({ messages, onReply, onEdit, onDelete, onRea
                   </div>
                 ) : (
                   /* Normal message bubble with hover interaction */
-                  <div className={`group flex items-end gap-2.5 ${isSentByMe ? 'justify-end' : 'justify-start'}`}>
+                  <div tabIndex={0} className={`group flex items-end gap-2.5 focus:outline-none ${isSentByMe ? 'justify-end' : 'justify-start'}`}>
                     {/* Received avatar */}
                     {!isSentByMe && (
                       <div className="w-7 h-7 rounded-lg overflow-hidden bg-slate-800 border border-slate-700 p-0.5 shrink-0 mb-1">
@@ -220,7 +220,7 @@ export default function MessageList({ messages, onReply, onEdit, onDelete, onRea
                       ) : (
                         <div className="relative">
                           {/* Hover action bar */}
-                          <div className={`absolute -top-8 ${isSentByMe ? 'right-0' : 'left-0'} hidden group-hover:flex items-center gap-0.5 bg-slate-900 border border-slate-800 rounded-xl px-1.5 py-1 shadow-lg z-10`}>
+                          <div className={`absolute -top-8 ${isSentByMe ? 'right-0' : 'left-0'} hidden group-hover:flex group-focus-within:flex group-active:flex items-center gap-0.5 bg-slate-900 border border-slate-800 rounded-xl px-1.5 py-1 shadow-lg z-10`}>
                             {/* Quick emoji reactions */}
                             {QUICK_EMOJIS.map((emoji) => (
                               <button

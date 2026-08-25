@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { Hash, Lock, Users, Info, X, UserPlus, Trash2, UserMinus, AlertCircle } from 'lucide-react';
+import { Hash, Lock, Users, Info, X, UserPlus, Trash2, UserMinus, AlertCircle, ArrowLeft } from 'lucide-react';
 
-export default function RoomHeader({ room }) {
+export default function RoomHeader({ room, onBack }) {
   const { idToken, mongoUser, contacts, contactsMap } = useAuth();
   const [showMembers, setShowMembers] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -153,6 +153,15 @@ export default function RoomHeader({ room }) {
     <div className="relative z-40">
       <div className="flex items-center justify-between px-6 py-4 bg-slate-900/60 backdrop-blur-md border-b border-slate-800 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="md:hidden p-2 bg-slate-950 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 transition-all cursor-pointer mr-1 active:scale-95 flex items-center justify-center shrink-0"
+              title="Back to list"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
           <div className="p-2 bg-slate-950 rounded-xl border border-slate-800 text-indigo-400">
             {room.isPrivate ? <Lock className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
           </div>
@@ -193,7 +202,7 @@ export default function RoomHeader({ room }) {
 
       {/* Slide-out members drawer */}
       {room.name !== 'DM' && showMembers && (
-        <div className="absolute right-0 top-full w-80 bg-slate-900 border-l border-b border-slate-800 z-50 shadow-2xl flex flex-col h-[calc(100vh-65px)] animate-in slide-in-from-right duration-200">
+        <div className="absolute right-0 top-full w-80 max-w-full bg-slate-900 border-l border-b border-slate-800 z-50 shadow-2xl flex flex-col h-[calc(100vh-65px)] animate-in slide-in-from-right duration-200">
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Channel Members</span>
             <button

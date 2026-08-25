@@ -79,16 +79,16 @@ export default function MessageInput({ onSendMessage, onTyping, replyingTo, onCa
   };
 
   return (
-    <div className="relative px-6 py-4 bg-slate-900 border-t border-slate-800 shrink-0">
+    <div className="relative px-4 py-3 md:px-6 md:py-4 bg-slate-900 border-t border-slate-800 shrink-0">
       {/* Emoji Picker Popover overlay */}
       {showEmojiPicker && (
-        <div ref={pickerRef} className="absolute bottom-16 left-6 z-40 shadow-2xl">
+        <div ref={pickerRef} className="absolute bottom-16 left-4 md:left-6 z-40 shadow-2xl w-80 max-w-[calc(100vw-32px)]">
           <EmojiPicker
             theme="dark"
             onEmojiClick={handleEmojiClick}
             skinTonesDisabled
             searchDisabled={false}
-            width={320}
+            width="100%"
             height={360}
           />
         </div>

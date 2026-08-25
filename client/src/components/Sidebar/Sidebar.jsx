@@ -19,7 +19,7 @@ export default function Sidebar({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   return (
-    <div className="w-80 h-full flex flex-col bg-slate-900/60 backdrop-blur-md border-r border-slate-800 shrink-0">
+    <div className={`h-full flex flex-col bg-slate-900/60 backdrop-blur-md border-r border-slate-800 shrink-0 w-full md:w-80 ${activeRoomId ? 'hidden md:flex' : 'flex'}`}>
       {/* Sidebar Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-slate-800">
         <div className="flex items-center gap-2">

@@ -35,8 +35,8 @@ function Dashboard() {
           const data = await res.json();
           setRooms(data);
           
-          // Default to first room if active room not selected
-          if (data.length > 0 && !activeRoom) {
+          // Default to first room if active room not selected (desktop only)
+          if (data.length > 0 && !activeRoom && window.innerWidth >= 768) {
             setActiveRoom(data[0]);
           }
         }
@@ -158,6 +158,10 @@ function Dashboard() {
     });
   };
 
+  const handleBackToSidebar = () => {
+    setActiveRoom(null);
+  };
+
   const handleRoomUpdated = (updatedRoom) => {
     setRooms((prev) => prev.map((r) => (r._id === updatedRoom._id ? updatedRoom : r)));
     if (activeRoom?._id === updatedRoom._id) {
@@ -223,7 +227,7 @@ function Dashboard() {
         onStartDM={handleStartDM}
         unreadCounts={unreadCounts}
       />
-      <ChatWindow room={activeRoom} onRoomUpdated={handleRoomUpdated} />
+      <ChatWindow room={activeRoom} onRoomUpdated={handleRoomUpdated} onBack={handleBackToSidebar} />
     </div>
   );
 }

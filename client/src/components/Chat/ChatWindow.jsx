@@ -7,7 +7,7 @@ import MessageInput from './MessageInput.jsx';
 import LoadingSkeleton from './LoadingSkeleton.jsx';
 import { MessageSquare, ShieldAlert, Lock } from 'lucide-react';
 
-export default function ChatWindow({ room, onRoomUpdated }) {
+export default function ChatWindow({ room, onRoomUpdated, onBack }) {
   const { idToken, mongoUser } = useAuth();
   const { socket } = useSocket();
   const [messages, setMessages] = useState([]);
@@ -256,7 +256,7 @@ export default function ChatWindow({ room, onRoomUpdated }) {
 
   if (!room) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-slate-950 p-8 text-center select-none">
+      <div className="flex-1 flex-col items-center justify-center bg-slate-950 p-8 text-center select-none hidden md:flex">
         <div className="w-16 h-16 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center mb-4 text-slate-500 animate-bounce">
           <MessageSquare className="w-8 h-8" />
         </div>
@@ -271,7 +271,7 @@ export default function ChatWindow({ room, onRoomUpdated }) {
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden relative chat-background">
       {/* Room Top Banner */}
-      <RoomHeader room={room} />
+      <RoomHeader room={room} onBack={onBack} />
 
       {isMember ? (
         <>
