@@ -2,14 +2,6 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import dns from 'dns';
-
-// Force IPv4 lookup order to eliminate cloud IPv6 timeout blackholes
-try {
-  dns.setDefaultResultOrder('ipv4first');
-} catch (err) {
-  // Ignored if not supported in Node version
-}
 
 // Ensure .env is resolved correctly regardless of cwd
 const __filename = fileURLToPath(import.meta.url);
@@ -42,51 +34,32 @@ export const isValidEmail = (email) => {
 let transporterInstance = null;
 
 /**
- * Explicitly resolve hostname to IPv4 address to prevent cloud IPv6 blackhole timeouts
- */
-const resolveHostToIPv4 = async (host) => {
-  if (!host || /^\d+\.\d+\.\d+\.\d+$/.test(host)) return host;
-  try {
-    const ips = await dns.promises.resolve4(host);
-    if (ips && ips.length > 0) {
-      console.log(`[DNS] Resolved ${host} directly to IPv4: ${ips[0]}`);
-      return ips[0];
-    }
-  } catch (err) {
-    console.warn(`[DNS] resolve4 failed for ${host}:`, err.message);
-  }
-  return host;
-};
-
-/**
  * Get or create the reusable Nodemailer transporter instance
  */
-export const getTransporter = async () => {
+export const getTransporter = () => {
   if (transporterInstance) return transporterInstance;
 
-  const originalHost = process.env.EMAIL_HOST || 'smtp.gmail.com';
-  const resolvedHost = await resolveHostToIPv4(originalHost);
-
-  const emailPort = parseInt(process.env.EMAIL_PORT, 10) || 465;
-  const emailSecure = process.env.EMAIL_SECURE !== undefined ? process.env.EMAIL_SECURE === 'true' : emailPort === 465;
+  const emailPort = parseInt(process.env.EMAIL_PORT, 10) || 587;
+  const emailSecure = process.env.EMAIL_SECURE === 'true';
   // Strip whitespace from Gmail app passwords if user pasted with spaces
   const emailPass = process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : '';
 
   transporterInstance = nodemailer.createTransport({
-    host: resolvedHost,
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
     port: emailPort,
     secure: emailSecure,
+    family: 4, // Explicitly force IPv4 to prevent cloud IPv6 timeouts on Render
     auth: {
       user: process.env.EMAIL_USER,
       pass: emailPass,
     },
-    connectionTimeout: 20000, // 20s timeout for cloud networks
-    greetingTimeout: 15000,   // 15s greeting timeout
-    socketTimeout: 25000,     // 25s socket inactivity timeout
     tls: {
-      servername: originalHost,
-      rejectUnauthorized: false,
+      rejectUnauthorized: true,
+      minVersion: 'TLSv1.2',
     },
+    connectionTimeout: 20000, // 20s connection timeout for cloud networks
+    greetingTimeout: 20000,   // 20s greeting timeout
+    socketTimeout: 30000,     // 30s socket inactivity timeout
   });
 
   return transporterInstance;
@@ -105,7 +78,7 @@ export const verifyTransporter = async () => {
   }
 
   try {
-    const transporter = await getTransporter();
+    const transporter = getTransporter();
     await transporter.verify();
     console.log(`[SMTP] Transporter verified successfully (${emailUser}). Ready to send emails.`);
     return true;
@@ -161,7 +134,7 @@ export const sendEmail = async ({ to, subject, text, html }) => {
 
   // 3. Dispatch email with error classification
   try {
-    const transporter = await getTransporter();
+    const transporter = getTransporter();
     const info = await transporter.sendMail(mailOptions);
     console.log(`[SMTP] Email sent to ${sanitizedTo}. MessageId: ${info.messageId}`);
     return {
