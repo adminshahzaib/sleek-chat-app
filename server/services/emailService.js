@@ -42,10 +42,30 @@ export const isValidEmail = (email) => {
 let transporterInstance = null;
 
 /**
+ * Explicitly resolve hostname to IPv4 address to prevent cloud IPv6 blackhole timeouts
+ */
+const resolveHostToIPv4 = async (host) => {
+  if (!host || /^\d+\.\d+\.\d+\.\d+$/.test(host)) return host;
+  try {
+    const ips = await dns.promises.resolve4(host);
+    if (ips && ips.length > 0) {
+      console.log(`[DNS] Resolved ${host} directly to IPv4: ${ips[0]}`);
+      return ips[0];
+    }
+  } catch (err) {
+    console.warn(`[DNS] resolve4 failed for ${host}:`, err.message);
+  }
+  return host;
+};
+
+/**
  * Get or create the reusable Nodemailer transporter instance
  */
-export const getTransporter = () => {
+export const getTransporter = async () => {
   if (transporterInstance) return transporterInstance;
+
+  const originalHost = process.env.EMAIL_HOST || 'smtp.gmail.com';
+  const resolvedHost = await resolveHostToIPv4(originalHost);
 
   const emailPort = parseInt(process.env.EMAIL_PORT, 10) || 465;
   const emailSecure = process.env.EMAIL_SECURE !== undefined ? process.env.EMAIL_SECURE === 'true' : emailPort === 465;
@@ -53,13 +73,9 @@ export const getTransporter = () => {
   const emailPass = process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : '';
 
   transporterInstance = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    host: resolvedHost,
     port: emailPort,
     secure: emailSecure,
-    family: 4, // Force IPv4 to prevent cloud IPv6 timeout blackholes
-    lookup: (hostname, options, callback) => {
-      dns.lookup(hostname, { family: 4 }, callback);
-    },
     auth: {
       user: process.env.EMAIL_USER,
       pass: emailPass,
@@ -68,6 +84,7 @@ export const getTransporter = () => {
     greetingTimeout: 15000,   // 15s greeting timeout
     socketTimeout: 25000,     // 25s socket inactivity timeout
     tls: {
+      servername: originalHost,
       rejectUnauthorized: false,
     },
   });
@@ -88,7 +105,7 @@ export const verifyTransporter = async () => {
   }
 
   try {
-    const transporter = getTransporter();
+    const transporter = await getTransporter();
     await transporter.verify();
     console.log(`[SMTP] Transporter verified successfully (${emailUser}). Ready to send emails.`);
     return true;
@@ -144,7 +161,7 @@ export const sendEmail = async ({ to, subject, text, html }) => {
 
   // 3. Dispatch email with error classification
   try {
-    const transporter = getTransporter();
+    const transporter = await getTransporter();
     const info = await transporter.sendMail(mailOptions);
     console.log(`[SMTP] Email sent to ${sanitizedTo}. MessageId: ${info.messageId}`);
     return {
