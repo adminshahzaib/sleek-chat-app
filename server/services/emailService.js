@@ -2,6 +2,14 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dns from 'dns';
+
+// Force IPv4 lookup order to eliminate cloud IPv6 timeout blackholes
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (err) {
+  // Ignored if not supported in Node version
+}
 
 // Ensure .env is resolved correctly regardless of cwd
 const __filename = fileURLToPath(import.meta.url);
@@ -39,28 +47,26 @@ let transporterInstance = null;
 export const getTransporter = () => {
   if (transporterInstance) return transporterInstance;
 
-  const emailPort = parseInt(process.env.EMAIL_PORT, 10) || 587;
-  const emailSecure = process.env.EMAIL_SECURE === 'true';
+  const emailPort = parseInt(process.env.EMAIL_PORT, 10) || 465;
+  const emailSecure = process.env.EMAIL_SECURE !== undefined ? process.env.EMAIL_SECURE === 'true' : emailPort === 465;
   // Strip whitespace from Gmail app passwords if user pasted with spaces
   const emailPass = process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : '';
 
-  const isGmail = (process.env.EMAIL_HOST || '').includes('gmail.com');
-
   transporterInstance = nodemailer.createTransport({
-    ...(isGmail
-      ? { service: 'gmail' }
-      : {
-          host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-          port: emailPort,
-          secure: emailSecure,
-        }),
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: emailPort,
+    secure: emailSecure,
+    family: 4, // Force IPv4 to prevent cloud IPv6 timeout blackholes
     auth: {
       user: process.env.EMAIL_USER,
       pass: emailPass,
     },
-    connectionTimeout: 10000, // 10 seconds timeout for establishing connection
-    greetingTimeout: 10000,   // 10 seconds greeting timeout
-    socketTimeout: 15000,     // 15 seconds socket inactivity timeout
+    connectionTimeout: 20000, // 20s timeout for cloud networks
+    greetingTimeout: 15000,   // 15s greeting timeout
+    socketTimeout: 25000,     // 25s socket inactivity timeout
+    tls: {
+      rejectUnauthorized: false,
+    },
   });
 
   return transporterInstance;
