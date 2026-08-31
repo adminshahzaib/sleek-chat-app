@@ -57,6 +57,9 @@ export const getTransporter = () => {
     port: emailPort,
     secure: emailSecure,
     family: 4, // Force IPv4 to prevent cloud IPv6 timeout blackholes
+    lookup: (hostname, options, callback) => {
+      dns.lookup(hostname, { family: 4 }, callback);
+    },
     auth: {
       user: process.env.EMAIL_USER,
       pass: emailPass,

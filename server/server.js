@@ -1,4 +1,11 @@
 import express from 'express';
+import dns from 'dns';
+
+// Force IPv4 lookup globally across the Node process
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (e) {}
+
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
