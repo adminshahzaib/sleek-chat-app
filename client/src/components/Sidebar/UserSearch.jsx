@@ -16,7 +16,7 @@ export default function UserSearch({ onStartDM, activeRoomId, rooms, onSelectRoo
 
   const [searchTerm, setSearchTerm] = useState('');
   const [presenceMap, setPresenceMap] = useState({});
-  
+
   // Contact Add Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [targetId, setTargetId] = useState('');
@@ -221,11 +221,10 @@ export default function UserSearch({ onStartDM, activeRoomId, rooms, onSelectRoo
             return (
               <div
                 key={item.key}
-                className={`w-full flex items-center justify-between p-2 rounded-xl border transition-all group ${
-                  isActive
-                    ? 'bg-indigo-600/15 border-indigo-500/35'
-                    : 'bg-transparent border-transparent hover:bg-slate-800/20 hover:border-slate-800/30'
-                }`}
+                className={`w-full flex items-center justify-between p-2 rounded-xl border transition-all group ${isActive
+                  ? 'bg-indigo-600/15 border-indigo-500/35'
+                  : 'bg-transparent border-transparent hover:bg-slate-800/20 hover:border-slate-800/30'
+                  }`}
               >
                 <button
                   onClick={() => handleItemClick(item)}
@@ -239,9 +238,8 @@ export default function UserSearch({ onStartDM, activeRoomId, rooms, onSelectRoo
                       className="w-full h-full object-contain"
                     />
                     <div
-                      className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${
-                        item.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'
-                      }`}
+                      className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${item.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'
+                        }`}
                     />
                   </div>
 

@@ -2,21 +2,35 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config();
+
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import roomRoutes from './routes/roomRoutes.js';
 import { socketAuth } from './socket/socketAuth.js';
 import registerSocketHandlers from './socket/socketHandler.js';
+import { verifyTransporter } from './services/emailService.js';
 
-// Load environment variables
-dotenv.config();
-
-// Connect to database
+// Connect to database and verify email transporter
 connectDB();
+verifyTransporter();
 
 const app = express();
 const server = http.createServer(app);
+
+// Reverse Proxy configuration for Render / Vercel
+app.set('trust proxy', 1);
+
+// Security Headers
+app.use(helmet());
 
 // CORS setup
 let clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -42,9 +56,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Body parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parsers with payload limit protection
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // REST Routes
 app.use('/api/auth', authRoutes);

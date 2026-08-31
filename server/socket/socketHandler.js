@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Room from '../models/Room.js';
 import Message from '../models/Message.js';
+import registerCallHandlers from './callHandler.js';
 
 export default function registerSocketHandlers(io) {
   io.on('connection', async (socket) => {
@@ -12,6 +13,9 @@ export default function registerSocketHandlers(io) {
     // Join user-specific notification channel
     socket.join(`user_${user._id.toString()}`);
     console.log(`[Socket] Joined user channel: user_${user._id}`);
+
+    // Register audio calling signaling handlers
+    registerCallHandlers(io, socket);
 
     // Set online status in database
     try {
@@ -46,11 +50,11 @@ export default function registerSocketHandlers(io) {
     });
 
     // Receive message from client, write to DB, and broadcast
-    socket.on('send_message', async ({ roomId, content, replyToId, attachment }) => {
+    socket.on('send_message', async ({ roomId, content, replyToId, type, fileUrl, fileName, fileSize, poll }) => {
       const hasContent = content && content.trim();
-      const hasAttachment = attachment && attachment.fileUrl;
-
-      if (!roomId || (!hasContent && !hasAttachment)) return;
+      const hasAttachment = fileUrl && fileUrl.trim();
+      const hasPoll = type === 'poll' && poll && poll.question && poll.options && poll.options.length >= 2;
+      if (!roomId || (!hasContent && !hasAttachment && !hasPoll)) return;
 
       try {
         // Double-check room membership for private rooms
@@ -63,16 +67,31 @@ export default function registerSocketHandlers(io) {
           return socket.emit('error_message', 'Not authorized to send messages here');
         }
 
+        let pollData = null;
+        if (type === 'poll' && hasPoll) {
+          pollData = {
+            question: poll.question.trim(),
+            options: poll.options.map((opt, index) => ({
+              optionId: `opt_${Date.now()}_${index}`,
+              text: opt.trim(),
+              votes: [],
+            })),
+            allowMultipleAnswers: !!poll.allowMultipleAnswers,
+          };
+        }
+
         // Save message to MongoDB
         const newMessage = await Message.create({
           roomId,
           senderId: user._id,
-          content: hasContent ? content.trim() : '',
+          content: content ? content.trim() : '',
+          text: content ? content.trim() : '',
           replyTo: replyToId || null,
-          messageType: attachment ? attachment.messageType : 'text',
-          fileUrl: attachment ? attachment.fileUrl : null,
-          fileName: attachment ? attachment.fileName : null,
-          fileSize: attachment ? attachment.fileSize : null,
+          type: type || 'text',
+          fileUrl: fileUrl || null,
+          fileName: fileName || null,
+          fileSize: fileSize || null,
+          poll: pollData,
         });
 
         // Populate sender info (displayName, email, avatarUrl) and replyTo details
@@ -92,6 +111,62 @@ export default function registerSocketHandlers(io) {
       } catch (err) {
         console.error(`[Socket Send Message Error]: ${err.message}`);
         socket.emit('error_message', 'Failed to deliver message');
+      }
+    });
+
+    // Vote on a poll option
+    socket.on('vote_poll', async ({ messageId, optionId }) => {
+      if (!messageId || !optionId) return;
+
+      try {
+        const message = await Message.findById(messageId);
+        if (!message || message.type !== 'poll' || !message.poll) {
+          return socket.emit('error_message', 'Poll message not found');
+        }
+
+        // Verify membership of room
+        const room = await Room.findById(message.roomId);
+        if (!room || !room.members.includes(user._id.toString())) {
+          return socket.emit('error_message', 'Not authorized to vote here');
+        }
+
+        const userId = user._id.toString();
+        const allowMultiple = message.poll.allowMultipleAnswers;
+
+        // Map options and update votes array
+        message.poll.options = message.poll.options.map((option) => {
+          const hasVotedForThis = option.votes.some(v => v.toString() === userId);
+          
+          if (option.optionId === optionId) {
+            // Toggle vote for the target option
+            if (hasVotedForThis) {
+              option.votes = option.votes.filter(v => v.toString() !== userId);
+            } else {
+              option.votes.push(user._id);
+            }
+          } else if (!allowMultiple) {
+            // Remove user's vote from all other options if multiple options are not allowed
+            option.votes = option.votes.filter(v => v.toString() !== userId);
+          }
+          return option;
+        });
+
+        await message.save();
+
+        // Populate sender info and reply details to return full document structure
+        const populatedMessage = await Message.findById(messageId)
+          .populate('senderId', 'displayName username email avatarUrl')
+          .populate({
+            path: 'replyTo',
+            select: 'content isDeleted senderId',
+            populate: { path: 'senderId', select: 'displayName username' },
+          });
+
+        // Broadcast updated poll back to everyone in the room
+        io.to(message.roomId.toString()).emit('poll_updated', populatedMessage.toObject());
+      } catch (err) {
+        console.error(`[Socket Vote Poll Error]: ${err.message}`);
+        socket.emit('error_message', 'Failed to submit vote');
       }
     });
 

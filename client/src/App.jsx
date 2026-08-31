@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { SocketProvider, useSocket } from './context/SocketContext.jsx';
+import { CallProvider } from './context/CallContext.jsx';
 import Login from './components/Auth/Login.jsx';
 import Register from './components/Auth/Register.jsx';
 import Sidebar from './components/Sidebar/Sidebar.jsx';
 import ChatWindow from './components/Chat/ChatWindow.jsx';
 import LoadingSpinner from './components/Common/LoadingSpinner.jsx';
+import AudioCallModal from './components/AudioCallModal.jsx';
 
 function Dashboard() {
   const { idToken, mongoUser } = useAuth();
@@ -256,7 +258,10 @@ function MainApp() {
   // If authenticated, load Chat workspace
   return (
     <SocketProvider>
-      <Dashboard />
+      <CallProvider>
+        <Dashboard />
+        <AudioCallModal />
+      </CallProvider>
     </SocketProvider>
   );
 }

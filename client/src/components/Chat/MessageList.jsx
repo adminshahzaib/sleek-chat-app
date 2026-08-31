@@ -4,15 +4,16 @@ import { ChevronDown, Reply, Pencil, Trash2, Check, X, CornerUpLeft, FileText, D
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
-const formatFileSize = (bytes) => {
+function formatBytes(bytes, decimals = 2) {
   if (!bytes) return '0 Bytes';
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
 
-export default function MessageList({ messages, onReply, onEdit, onDelete, onReact }) {
+export default function MessageList({ messages, onReply, onEdit, onDelete, onReact, onVotePoll }) {
   const { mongoUser, contactsMap } = useAuth();
   const bottomRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -96,60 +97,6 @@ export default function MessageList({ messages, onReply, onEdit, onDelete, onRea
       }
       return part;
     });
-  };
-
-  const renderMessageContent = (msg) => {
-    switch (msg.messageType) {
-      case 'image':
-        return (
-          <div className="flex flex-col gap-1">
-            <img 
-              src={msg.fileUrl} 
-              alt={msg.fileName || 'Attachment'} 
-              className="max-w-[240px] md:max-w-xs max-h-64 rounded-xl object-cover cursor-pointer hover:opacity-90 transition-opacity border border-slate-800/40"
-              onClick={() => window.open(msg.fileUrl, '_blank')}
-            />
-            {msg.content && <p className="mt-1">{renderMessageText(msg.content)}</p>}
-          </div>
-        );
-      case 'audio':
-        return (
-          <div className="flex flex-col gap-1 min-w-[200px] py-1 px-0.5">
-            <audio 
-              src={msg.fileUrl} 
-              controls 
-              className="max-w-full rounded-lg h-8 shadow-inner select-none focus:outline-none" 
-            />
-          </div>
-        );
-      case 'file':
-        return (
-          <a 
-            href={msg.fileUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-950/45 hover:bg-slate-950/70 border border-slate-800/50 hover:border-slate-800 transition-all cursor-pointer select-none text-left no-underline group/file min-w-[220px] max-w-[280px]"
-          >
-            <div className="p-2 bg-slate-900 rounded-lg border border-slate-850 text-indigo-400 group-hover/file:text-indigo-300 shrink-0">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-bold text-slate-200 truncate group-hover/file:text-slate-100">
-                {msg.fileName}
-              </p>
-              <p className="text-[9px] text-slate-500 font-semibold mt-0.5 uppercase tracking-wide">
-                {formatFileSize(msg.fileSize)}
-              </p>
-            </div>
-            <div className="p-1.5 rounded-lg text-slate-500 hover:text-slate-250 group-hover/file:translate-y-0.5 transition-all shrink-0">
-              <Download className="w-4 h-4" />
-            </div>
-          </a>
-        );
-      case 'text':
-      default:
-        return <p>{renderMessageText(msg.content)}</p>;
-    }
   };
 
   const getDisplayName = (msg) => {
@@ -329,13 +276,137 @@ export default function MessageList({ messages, onReply, onEdit, onDelete, onRea
                           </div>
 
                           {/* Message bubble */}
-                          <div className={`rounded-2xl text-xs leading-relaxed shadow-sm break-words ${
-                            msg.messageType === 'image' ? 'p-1' : 'px-3.5 py-2'
-                          } ${isSentByMe
+                          <div className={`px-3.5 py-2 rounded-2xl text-xs leading-relaxed shadow-sm break-words ${isSentByMe
                               ? 'bg-indigo-600 text-white rounded-br-none'
                               : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-bl-none'
                             }`}>
-                            {renderMessageContent(msg)}
+                            {msg.type === 'image' && msg.fileUrl && (
+                              <div className="mb-1.5 max-w-xs overflow-hidden rounded-xl bg-slate-950 border border-slate-800/40">
+                                <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
+                                  <img
+                                    src={msg.fileUrl}
+                                    alt={msg.fileName || 'Image'}
+                                    className="w-full max-h-60 object-cover hover:scale-105 transition-transform duration-200 cursor-pointer"
+                                  />
+                                </a>
+                              </div>
+                            )}
+
+                            {msg.type === 'audio' && msg.fileUrl && (
+                              <div className="mb-1.5 min-w-[200px] md:min-w-[240px] py-1">
+                                <audio
+                                  src={msg.fileUrl}
+                                  controls
+                                  className="w-full accent-indigo-600 h-8 rounded-lg"
+                                />
+                              </div>
+                            )}
+
+                            {msg.type === 'file' && msg.fileUrl && (
+                              <div className="mb-1.5 p-2 bg-slate-950/60 hover:bg-slate-950 border border-slate-800/60 rounded-xl flex items-center justify-between gap-3 min-w-[200px] md:min-w-[240px] max-w-xs transition-colors shadow-inner select-none">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="p-2 bg-indigo-600/10 border border-indigo-500/25 rounded-lg text-indigo-400 shrink-0">
+                                    <FileText className="w-5 h-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-[11px] font-bold text-slate-250 truncate" title={msg.fileName}>
+                                      {msg.fileName}
+                                    </p>
+                                    <p className="text-[9px] text-slate-500 mt-0.5 font-semibold">
+                                      {msg.fileSize ? formatBytes(msg.fileSize) : 'Unknown size'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <a
+                                  href={msg.fileUrl}
+                                  download={msg.fileName}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-2 bg-slate-900 border border-slate-850 hover:bg-slate-850 hover:text-white rounded-lg text-slate-400 transition-colors shrink-0 cursor-pointer"
+                                  title="Download File"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </a>
+                              </div>
+                            )}
+
+                            {msg.type === 'poll' && msg.poll && (
+                              <div className="mb-1.5 p-3.5 bg-slate-950/80 border border-slate-800/80 rounded-xl min-w-[220px] md:min-w-[260px] max-w-xs shadow-inner space-y-3 select-none text-left">
+                                {/* Poll Header */}
+                                <div className="space-y-0.5">
+                                  <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest">Channel Poll</span>
+                                  <h4 className="text-[11px] font-bold text-slate-100 leading-snug">{msg.poll.question}</h4>
+                                  <p className="text-[8px] text-slate-500 font-semibold">
+                                    {msg.poll.allowMultipleAnswers ? 'Multiple choice' : 'Single choice'}
+                                  </p>
+                                </div>
+
+                                {/* Options List */}
+                                <div className="space-y-1.5">
+                                  {msg.poll.options.map((option) => {
+                                    // Total votes count
+                                    const totalVotes = msg.poll.options.reduce((acc, opt) => acc + (opt.votes?.length || 0), 0);
+                                    const optionVotesCount = option.votes?.length || 0;
+                                    const percentage = totalVotes > 0 ? Math.round((optionVotesCount / totalVotes) * 100) : 0;
+
+                                    const currentUserId = mongoUser?._id?.toString() || mongoUser?.id?.toString();
+                                    const hasVoted = option.votes?.some(v => (v._id || v)?.toString() === currentUserId);
+
+                                    return (
+                                      <div
+                                        key={option.optionId}
+                                        onClick={() => onVotePoll?.((msg._id || msg.id), option.optionId)}
+                                        className={`group/opt relative p-2 rounded-lg border transition-all cursor-pointer flex flex-col justify-center overflow-hidden ${
+                                          hasVoted
+                                            ? 'bg-indigo-600/10 border-indigo-500/35'
+                                            : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-900 hover:border-slate-700'
+                                        }`}
+                                      >
+                                        {/* Background Progress Fill */}
+                                        <div
+                                          className={`absolute left-0 top-0 bottom-0 transition-all duration-300 pointer-events-none ${
+                                            hasVoted ? 'bg-indigo-500/15' : 'bg-slate-800/40'
+                                          }`}
+                                          style={{ width: `${percentage}%` }}
+                                        />
+
+                                        {/* Option Content */}
+                                        <div className="relative z-10 flex items-center justify-between text-[10px] font-semibold text-slate-200">
+                                          <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                                            {hasVoted ? (
+                                              <span className="w-3.5 h-3.5 bg-indigo-500 rounded-full flex items-center justify-center text-[9px] text-white shrink-0 shadow shadow-indigo-500/20">
+                                                ✓
+                                              </span>
+                                            ) : (
+                                              <span className="w-3.5 h-3.5 border border-slate-700 rounded-full flex items-center justify-center text-[9px] text-slate-600 shrink-0 group-hover/opt:border-slate-500 transition-colors" />
+                                            )}
+                                            <span className="truncate">{option.text}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1 text-[9px] text-slate-400 shrink-0 font-bold">
+                                            <span>{percentage}%</span>
+                                            <span className="text-[7.5px] text-slate-600 font-normal">({optionVotesCount})</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Poll Footer */}
+                                <div className="flex items-center justify-between pt-1.5 text-[8px] text-slate-500 border-t border-slate-900/50">
+                                  <span>
+                                    Total votes: {msg.poll.options.reduce((acc, opt) => acc + (opt.votes?.length || 0), 0)}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Render text content if present (optional caption for images/files, or normal text message) */}
+                            {((msg.type === 'text' || !msg.type) || (msg.content && msg.content.trim())) && (
+                              <p className={msg.type && msg.type !== 'text' ? 'mt-1 text-slate-350' : ''}>
+                                {renderMessageText(msg.content)}
+                              </p>
+                            )}
                           </div>
 
                           {/* Reaction pills */}

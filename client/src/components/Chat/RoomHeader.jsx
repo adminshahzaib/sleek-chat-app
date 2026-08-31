@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { Hash, Lock, Users, Info, X, UserPlus, Trash2, UserMinus, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Hash, Lock, Users, Info, X, UserPlus, Trash2, UserMinus, AlertCircle, ArrowLeft, Phone, Video } from 'lucide-react';
+import useAudioCall from '../../hooks/useAudioCall.js';
 
 export default function RoomHeader({ room, onBack }) {
   const { idToken, mongoUser, contacts, contactsMap } = useAuth();
+  const { startCall } = useAudioCall();
   const [showMembers, setShowMembers] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedInvitees, setSelectedInvitees] = useState([]);
@@ -180,8 +182,8 @@ export default function RoomHeader({ room, onBack }) {
           </div>
         </div>
 
-        {/* View members list toggle */}
-        {room.name !== 'DM' && (
+        {/* Actions Menu: Members list toggle for channels / Voice and Video calls for DMs */}
+        {room.name !== 'DM' ? (
           <button
             type="button"
             onClick={() => setShowMembers((prev) => !prev)}
@@ -197,6 +199,34 @@ export default function RoomHeader({ room, onBack }) {
               {room.members?.length || 1}
             </span>
           </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            {/* Voice Call Button */}
+            <button
+              type="button"
+              onClick={() => {
+                const other = room.members?.find((m) => m._id !== mongoUser?._id);
+                if (other) startCall(other, 'audio');
+              }}
+              className="p-2.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-400 hover:text-indigo-400 rounded-xl transition-all cursor-pointer flex items-center justify-center shadow-sm active:scale-95 shrink-0"
+              title="Voice Call"
+            >
+              <Phone className="w-4 h-4" />
+            </button>
+
+            {/* Video Call Button */}
+            <button
+              type="button"
+              onClick={() => {
+                const other = room.members?.find((m) => m._id !== mongoUser?._id);
+                if (other) startCall(other, 'video');
+              }}
+              className="p-2.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-400 hover:text-indigo-400 rounded-xl transition-all cursor-pointer flex items-center justify-center shadow-sm active:scale-95 shrink-0"
+              title="Video Call"
+            >
+              <Video className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
 

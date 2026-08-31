@@ -117,11 +117,23 @@ export default function ChatWindow({ room, onRoomUpdated, onBack }) {
       );
     };
 
+    // Update poll votes in real-time
+    const handlePollUpdated = (updatedMsg) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          (m._id || m.id)?.toString() === (updatedMsg._id || updatedMsg.id)?.toString()
+            ? updatedMsg
+            : m
+        )
+      );
+    };
+
     socket.on('receive_message', handleReceiveMessage);
     socket.on('user_typing', handleUserTyping);
     socket.on('message_reaction_updated', handleReactionUpdated);
     socket.on('message_edited', handleMessageEdited);
     socket.on('message_deleted', handleMessageDeleted);
+    socket.on('poll_updated', handlePollUpdated);
 
     return () => {
       socket.off('receive_message', handleReceiveMessage);
@@ -129,6 +141,7 @@ export default function ChatWindow({ room, onRoomUpdated, onBack }) {
       socket.off('message_reaction_updated', handleReactionUpdated);
       socket.off('message_edited', handleMessageEdited);
       socket.off('message_deleted', handleMessageDeleted);
+      socket.off('poll_updated', handlePollUpdated);
     };
   }, [socket, room?._id]);
 
@@ -139,9 +152,18 @@ export default function ChatWindow({ room, onRoomUpdated, onBack }) {
       roomId: room._id,
       content,
       replyToId,
-      attachment,
+      type: attachment?.type || 'text',
+      fileUrl: (attachment?.fileUrl || attachment?.url) || null,
+      fileName: attachment?.fileName || null,
+      fileSize: attachment?.fileSize || null,
+      poll: attachment?.poll || null,
     });
     setReplyingTo(null);
+  };
+
+  const handleVotePoll = (messageId, optionId) => {
+    if (!socket || !room?._id || !isMember) return;
+    socket.emit('vote_poll', { messageId, optionId });
   };
 
   const handleTyping = (isTyping) => {
@@ -286,6 +308,7 @@ export default function ChatWindow({ room, onRoomUpdated, onBack }) {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onReact={handleReact}
+              onVotePoll={handleVotePoll}
             />
           )}
 

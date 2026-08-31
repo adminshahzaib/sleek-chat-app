@@ -5,14 +5,19 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "flush:ratelimit": "node -e \"import('./config/redis.js').then(async m => { while(!m.default.isReady()) await new Promise(r => setTimeout(r, 200)); const k = await m.client.keys('ratelimit:*'); if(k.length) await m.client.del(k); console.log('Flushed rate limit keys:', k); process.exit(0); })\""
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "firebase-admin": "^12.1.0",
+    "helmet": "^8.3.0",
     "mongoose": "^8.4.1",
+    "nodemailer": "^9.0.6",
+    "redis": "^6.2.1",
     "socket.io": "^4.7.5"
   },
   "devDependencies": {
