@@ -9,18 +9,40 @@ export default function Login({ onToggleAuth }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const getFriendlyErrorMessage = (err) => {
+    const code = err?.code || '';
+    switch (code) {
+      case 'auth/invalid-credential':
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+        return 'Invalid email or password. Please check your credentials.';
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.';
+      case 'auth/user-disabled':
+        return 'This account has been disabled. Please contact support.';
+      case 'auth/too-many-requests':
+        return 'Access temporarily blocked due to many failed login attempts. Please try again later.';
+      case 'auth/network-request-failed':
+        return 'Network error. Please check your internet connection.';
+      case 'auth/popup-closed-by-user':
+        return 'Google sign in was cancelled.';
+      default:
+        return err?.message?.replace('Firebase:', '').trim() || 'Failed to sign in. Please try again.';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       return setError('Please fill in all fields');
     }
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
     } catch (err) {
-      console.error(err);
-      setError(err.message.replace('Firebase:', '').trim() || 'Failed to sign in');
+      console.error('[Login Error]:', err);
+      setError(getFriendlyErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -32,8 +54,8 @@ export default function Login({ onToggleAuth }) {
     try {
       await googleSignIn();
     } catch (err) {
-      console.error(err);
-      setError(err.message.replace('Firebase:', '').trim() || 'Failed Google sign in');
+      console.error('[Google Sign In Error]:', err);
+      setError(getFriendlyErrorMessage(err));
     } finally {
       setLoading(false);
     }

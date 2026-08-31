@@ -8,6 +8,7 @@ import Sidebar from './components/Sidebar/Sidebar.jsx';
 import ChatWindow from './components/Chat/ChatWindow.jsx';
 import LoadingSpinner from './components/Common/LoadingSpinner.jsx';
 import AudioCallModal from './components/AudioCallModal.jsx';
+import VerifyEmail from './components/Auth/VerifyEmail.jsx';
 
 function Dashboard() {
   const { idToken, mongoUser } = useAuth();
@@ -255,7 +256,16 @@ function MainApp() {
     );
   }
 
-  // If authenticated, load Chat workspace
+  // If authenticated but email is not verified, show verification waiting screen
+  if (!currentUser.emailVerified) {
+    return (
+      <div className="min-h-screen w-screen flex items-center justify-center bg-slate-950 p-4">
+        <VerifyEmail />
+      </div>
+    );
+  }
+
+  // If authenticated and verified (or OAuth), load Chat workspace
   return (
     <SocketProvider>
       <CallProvider>
