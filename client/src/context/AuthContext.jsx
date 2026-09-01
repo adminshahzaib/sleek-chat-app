@@ -22,6 +22,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [mongoUser, setMongoUser] = useState(null);
   const [idToken, setIdToken] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -165,7 +166,8 @@ export const AuthProvider = ({ children }) => {
       };
       await sendEmailVerification(user, actionCodeSettings);
 
-      // Keep user in state with emailVerified: false (waiting screen will render)
+      // Enter verification waiting state for manual registration
+      setAwaitingVerification(true);
       setCurrentUser(user);
       setIdToken(null);
       setMongoUser(null);
@@ -176,21 +178,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login user with Email/Password (verifying email status)
+  // Login user with Email/Password (valid credentials log in directly without requiring email verification)
   const login = async (email, password) => {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Check if email is verified
-      if (!user.emailVerified) {
-        setCurrentUser(user);
-        setIdToken(null);
-        setMongoUser(null);
-        setLoading(false);
-        return user;
-      }
+      // Clear registration verification waiting state on successful login
+      setAwaitingVerification(false);
 
       const token = await user.getIdToken(true);
       setIdToken(token);
@@ -220,6 +216,7 @@ export const AuthProvider = ({ children }) => {
     await auth.currentUser.reload();
     const refreshedUser = auth.currentUser;
     if (refreshedUser.emailVerified) {
+      setAwaitingVerification(false);
       setCurrentUser(refreshedUser);
       const token = await refreshedUser.getIdToken(true);
       setIdToken(token);
@@ -233,6 +230,7 @@ export const AuthProvider = ({ children }) => {
   const googleSignIn = async () => {
     setLoading(true);
     try {
+      setAwaitingVerification(false);
       const result = await signInWithPopup(auth, googleProvider);
       const token = await result.user.getIdToken(true);
       setIdToken(token);
@@ -247,6 +245,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     setLoading(true);
     try {
+      setAwaitingVerification(false);
       // Set offline status in DB prior to signing out
       if (idToken) {
         await fetch('/api/auth/sync', {
@@ -312,14 +311,10 @@ export const AuthProvider = ({ children }) => {
       try {
         if (user) {
           setCurrentUser(user);
-          if (user.emailVerified) {
+          if (!awaitingVerification) {
             const token = await user.getIdToken();
             setIdToken(token);
             await syncWithMongo(token);
-          } else {
-            // Unverified user: keep user in state for VerifyEmail screen, but block protected backend sync
-            setIdToken(null);
-            setMongoUser(null);
           }
         } else {
           setCurrentUser(null);
@@ -335,10 +330,11 @@ export const AuthProvider = ({ children }) => {
     });
 
     return unsubscribe;
-  }, []);
+  }, [awaitingVerification]);
 
   const value = {
     currentUser,
+    awaitingVerification,
     mongoUser,
     idToken,
     loading,

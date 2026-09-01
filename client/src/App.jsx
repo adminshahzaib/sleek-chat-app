@@ -236,7 +236,7 @@ function Dashboard() {
 }
 
 function MainApp() {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, loading, awaitingVerification } = useAuth();
   const [authView, setAuthView] = useState('login'); // 'login' or 'register'
 
   if (loading) {
@@ -256,8 +256,8 @@ function MainApp() {
     );
   }
 
-  // If authenticated but email is not verified, show verification waiting screen
-  if (!currentUser.emailVerified) {
+  // If user just registered manually, show verification waiting screen
+  if (awaitingVerification) {
     return (
       <div className="min-h-screen w-screen flex items-center justify-center bg-slate-950 p-4">
         <VerifyEmail />
